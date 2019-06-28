@@ -29,6 +29,7 @@ extension UIView: JXMarqueeViewCopyable {
 public enum JXMarqueeType {
     case left
     case right
+    case top
     case reverse
 }
 
@@ -100,13 +101,19 @@ public class JXMarqueeView: UIView {
 
         if marqueeType == .reverse{
             containerView.frame = CGRect(x: 0, y: 0, width: validContentView.bounds.size.width, height: self.bounds.size.height)
+        }else if marqueeType == .top{
+            containerView.frame = CGRect(x: 0, y: 0, width: validContentView.bounds.size.width + contentMargin, height: self.bounds.size.height*2)
         }else {
             containerView.frame = CGRect(x: 0, y: 0, width: validContentView.bounds.size.width*2 + contentMargin, height: self.bounds.size.height)
         }
 
         if validContentView.bounds.size.width > self.bounds.size.width {
             validContentView.frame = CGRect(x: 0, y: 0, width: validContentView.bounds.size.width, height: self.bounds.size.height)
-            if marqueeType != .reverse {
+            if marqueeType == .top {
+                let otherContentView = validContentView.copyMarqueeView()
+                otherContentView.frame = CGRect(x: 0, y: validContentView.bounds.size.height + contentMargin, width: self.bounds.size.width, height: validContentView.bounds.size.height)
+                containerView.addSubview(otherContentView)
+            } else if marqueeType != .reverse {
                 //骚操作：UIView是没有遵从拷贝协议的。可以通过UIView支持NSCoding协议，间接来复制一个视图
                 let otherContentView = validContentView.copyMarqueeView()
                 otherContentView.frame = CGRect(x: validContentView.bounds.size.width + contentMargin, y: 0, width: validContentView.bounds.size.width, height: self.bounds.size.height)
@@ -134,6 +141,10 @@ public class JXMarqueeView: UIView {
         if marqueeType == .right {
             var frame = self.containerView.frame
             frame.origin.x = self.bounds.size.width - frame.size.width
+            self.containerView.frame = frame
+        } else if marqueeType == .top {
+            var frame = self.containerView.frame
+            frame.origin.y = self.bounds.size.height - frame.size.height
             self.containerView.frame = frame
         }
 
@@ -202,6 +213,18 @@ public class JXMarqueeView: UIView {
                     }
                     self.containerView.frame = frame
                 }
+            }
+        case .top:
+            let targetY = -(self.contentView!.bounds.size.height + self.contentMargin)
+            if frame.origin.y <= targetY {
+                frame.origin.y = 0
+                self.containerView.frame = frame
+            }else {
+                frame.origin.y -= pointsPerFrame
+                if frame.origin.y < targetY {
+                    frame.origin.y = targetY
+                }
+                self.containerView.frame = frame
             }
         }
 
